@@ -11,3 +11,9 @@ def get_system_info():
         "CPU Cores": psutil.cpu_count(),
         "RAM (GB)": round(psutil.virtual_memory().total / (1024**3), 2)
     }
+def print_system_info():
+    """Print system information nicely"""
+    info = get_system_info()
+    print("\n=== System Information ===")
+    for key, value in info.items():
+        print(f"{key:20}: {value}")
