@@ -80,5 +80,3 @@ def print_local_users():
     print("\nAudit Complete.")
 
 
-
-print_local_users()

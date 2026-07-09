@@ -57,4 +57,3 @@ def print_history(limit=40):
             print(f"{index:2}. {command}")
 
 
-print_history()

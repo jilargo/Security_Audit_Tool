@@ -98,4 +98,3 @@ def print_antivirus_status():
 
 
 
-print_antivirus_status()

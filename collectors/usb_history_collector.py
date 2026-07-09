@@ -78,4 +78,3 @@ def print_usb_history():
 
 
 
-print_usb_history()

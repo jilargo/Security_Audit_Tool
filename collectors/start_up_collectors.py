@@ -118,4 +118,3 @@ def print_startup_programs():
             print(f"{key}: {value}")
 
 
-print_startup_programs()

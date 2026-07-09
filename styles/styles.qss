@@ -1,0 +1,74 @@
+
+            QWidget{
+                background:#eef2f7;
+                font-family:'Segoe UI';
+                font-size:11pt;
+            }
+
+            QLabel#title{
+                color:#0f4c81;
+                padding:5px;
+            }
+
+            QLabel#subtitle{
+                color:gray;
+                font-size:12pt;
+                margin-bottom:10px;
+            }
+
+            QGroupBox{
+                background:white;
+                border:2px solid #d9d9d9;
+                border-radius:10px;
+                margin-top:10px;
+                font-weight:bold;
+                padding-top:20px;
+            }
+
+            QGroupBox::title{
+                subcontrol-origin:margin;
+                left:15px;
+                padding:0px 8px;
+            }
+
+            QLabel{
+                color:#333333;
+                background: transparent;
+            }
+
+            QLineEdit,
+            QComboBox,
+            QDateEdit{
+
+                background:white;
+                border:1px solid #bdbdbd;
+                border-radius:6px;
+                padding:8px;
+                min-height:30px;
+            }
+
+            QLineEdit:focus,
+            QComboBox:focus,
+            QDateEdit:focus{
+                border:2px solid #1976d2;
+            }
+
+            QPushButton{
+
+                background:#1976d2;
+                color:white;
+                font-weight:bold;
+                border:none;
+                border-radius:8px;
+                padding:12px;
+                min-width:250px;
+            }
+
+            QPushButton:hover{
+                background:#2196f3;
+            }
+
+            QPushButton:pressed{
+                background:#1565c0;
+            }
+        

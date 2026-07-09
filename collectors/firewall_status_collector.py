@@ -61,4 +61,3 @@ def print_firewall_status():
 
 
 
-print_firewall_status()

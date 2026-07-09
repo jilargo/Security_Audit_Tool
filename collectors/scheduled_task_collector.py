@@ -58,4 +58,3 @@ def print_scheduled_tasks():
         print(f"Author    : {task.get('Author')}")
 
 
-print_scheduled_tasks()

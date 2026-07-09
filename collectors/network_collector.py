@@ -42,4 +42,3 @@ def print_network_connections():
             print(f"{key}: {value}")
 
 
-print_network_connections()
