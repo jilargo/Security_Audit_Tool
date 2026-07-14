@@ -98,7 +98,7 @@ class MainWindow(QWidget):
     """
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Security Audit Tool")
+        self.setWindowTitle("Security Audit Tool / James Ian Largo")
         self.resize(720, 500)
         self.setWindowIcon(QIcon("assets/icons/shield.png"))
         self.setup_ui()

@@ -1,5 +1,7 @@
 import subprocess
 import json
+import re
+from datetime import datetime
 
 def get_antivirus_info():
     """
@@ -26,7 +28,7 @@ def get_antivirus_info():
             info["Windows_Defender"] = {
                 "Real-time Protection": "✅ Enabled" if defender.get("RealTimeProtectionEnabled") else "❌ Disabled",
                 "Antivirus Service": "✅ Enabled" if defender.get("AntivirusEnabled") else "❌ Disabled",
-                "Signature Updated": defender.get("AntivirusSignatureLastUpdated", "Unknown")
+                "Signature Updated": parse_powershell_date(defender.get("AntivirusSignatureLastUpdated", "Unknown"))
             }
     except:
         info["Windows_Defender"] = {"Status": "Could not retrieve (try running as Admin)"}
@@ -59,6 +61,25 @@ def get_antivirus_info():
         pass
     
     return info
+
+def parse_powershell_date(date_string):
+    """
+    Convert PowerShell JSON date format:
+    /Date(1783959818000)/
+    into:
+    2026-07-13 14:23:38
+    """
+    if not date_string:
+        return "Unknown"
+
+    match = re.search(r"/Date\((\d+)\)/", date_string)
+    if not match:
+        return date_string
+
+    timestamp_ms = int(match.group(1))
+    dt = datetime.fromtimestamp(timestamp_ms / 1000)
+
+    return dt.strftime("%Y-%m-%d %H:%M:%S")
 
 
 def print_antivirus_status():
