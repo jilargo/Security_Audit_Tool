@@ -86,4 +86,4 @@ def print_installed_apps():
         print("-" * 50)
         for key, value in app.items():
             print(f"{key}: {value}")
-            
+
