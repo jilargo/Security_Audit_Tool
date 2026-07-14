@@ -21,7 +21,7 @@ class SecurityAudit:
             "company_id": window.company_id_input.text().strip(),
             "company_email": window.company_email_input.text().strip(),
             "date_hired": window.date_hired_input.date().toString("yyyy-MM-dd"),
-            "department": window.department_input.currentText(),
+            "Department": window.department_input.currentText(),
         }
         return data
 
