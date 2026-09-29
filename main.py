@@ -1,3 +1,16 @@
+"""
+Security Audit Tool - application entry point.
+
+Run with:  python main.py
+"""
+
+import sys
+from pathlib import Path
+
+# Make sure the project packages are importable regardless of the working directory
+PROJECT_ROOT = Path(__file__).resolve().parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 from collectors.antivirus_info_collector import get_antivirus_info
 from collectors.event_logs_collector import get_system_events
@@ -12,34 +25,37 @@ from collectors.system_info_collector import get_system_info
 from collectors.usb_history_collector import get_usb_history
 from collectors.user_acounts_audit import get_local_users
 
-import sys
 from PySide6.QtWidgets import QApplication
 from gui.main_window import MainWindow
 
+
 def main():
 
-     #function call from imported modules
-     
-     # get_antivirus_info()
-     # get_system_events()
-     # get_firewall_status()
-     # get_registry_value()
-     # get_network_connections()
-     # get_powershell_history()
-     # get_running_processes()
-     # get_scheduled_tasks()
-     # get_registry_startup_programs()
-     # get_system_info()
-     # get_usb_history()
-     # get_local_users()
-     
+    # function call from imported modules
 
-     app = QApplication(sys.argv)
+    # get_antivirus_info()
+    # get_system_events()
+    # get_firewall_status()
+    # get_registry_value()
+    # get_network_connections()
+    # get_powershell_history()
+    # get_running_processes()
+    # get_scheduled_tasks()
+    # get_registry_startup_programs()
+    # get_system_info()
+    # get_usb_history()
+    # get_local_users()
 
-     window = MainWindow()
-     window.show()
+    app = QApplication(sys.argv)
+    app.setApplicationName("Security Audit Tool")
+    app.setOrganizationName("Security Audit Tool")
+    app.setStyle("Fusion")
 
-     sys.exit(app.exec())
+    window = MainWindow()
+    window.show()
+
+    sys.exit(app.exec())
+
 
 if __name__ == "__main__":
-     main()
+    main()

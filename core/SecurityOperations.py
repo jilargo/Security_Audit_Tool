@@ -1,13 +1,12 @@
 
 from openpyxl import load_workbook
-from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
-from openpyxl.utils import get_column_letter
 from openpyxl.drawing.image import Image
-from openpyxl.chart import BarChart, Reference
 from pathlib import Path
 from datetime import datetime
 import pandas as pd
 from collections import Counter   # Used for counting top processes
+
+from core.report_style import ReportStyler   # All visual formatting lives here
 
 
 class SecurityAudit:
@@ -42,66 +41,13 @@ class SecurityAudit:
         return data
 
     @staticmethod
-    def _style_worksheet(ws, is_dashboard=False):
-        """
-        Apply professional styling to an Excel worksheet.
-        
-        This includes:
-        - Colored headers
-        - Borders
-        - Auto-adjusting column widths
-        - Freeze panes for easy scrolling
-        - Text wrapping for readability
-        
-        Args:
-            ws: openpyxl worksheet object
-            is_dashboard: Whether this is the special Dashboard sheet (different styling)
-        """
-        if not ws or ws.max_row == 0:
-            return
-            
-        # Professional dark blue header style
-        header_fill = PatternFill(start_color="1F4E79", end_color="1F4E79", fill_type="solid")
-        header_font = Font(color="FFFFFF", bold=True, size=12)
-        border = Border(left=Side(style='thin'), right=Side(style='thin'),
-                       top=Side(style='thin'), bottom=Side(style='thin'))
-        
-        # Style the header row
-        for cell in ws[1]:
-            cell.fill = header_fill
-            cell.font = header_font
-            cell.alignment = Alignment(horizontal="center", vertical="center")
-            cell.border = border
-        
-        if not is_dashboard:
-            # Auto-adjust column widths based on content
-            for column in ws.columns:
-                max_length = 0
-                column_letter = get_column_letter(column[0].column)
-
-                for cell in column:
-                    if cell.value is not None:
-                        max_length = max(max_length, len(str(cell.value)))
-
-                ws.column_dimensions[column_letter].width = max_length + 2
-            
-            # Freeze the header row so it stays visible when scrolling
-            ws.freeze_panes = "A2"
-            
-            # Style data rows
-            for row in ws.iter_rows(min_row=2):
-                for cell in row:
-                    if cell.value is not None:
-                        cell.alignment = Alignment(vertical="top", wrap_text=True)
-                        cell.border = border
-
-    @staticmethod
-    def generate_audit_report(window, output_folder="reports", logo_path=None):
+    def generate_audit_report(window=None, output_folder="reports", logo_path=None,
+                              progress=None, employee_data=None):
         """
         Main method that generates the complete security audit Excel report.
         
         Process flow:
-        1. Collect employee data from GUI
+        1. Collect employee data (supplied by the GUI, or read from `window`)
         2. Gather system security information from various collectors
         3. Assess risk level based on findings
         4. Create Excel file with multiple sheets using pandas
@@ -109,15 +55,23 @@ class SecurityAudit:
         6. Save and return the file path
         
         Args:
-            window: MainWindow instance
+            window: Optional MainWindow instance, only used when employee_data is omitted
             output_folder: Folder where the report will be saved
             logo_path: Optional path to company logo image
+            progress: Optional callable(percent, message) used to report progress
+            employee_data: Optional dict of employee details captured on the GUI thread
             
         Returns:
             Path: Full path to the generated Excel report
         """
+        def tick(percent, message):
+            """Forward a progress update to the caller, if it wants one."""
+            if progress:
+                progress(percent, message)
+
         # Step 1: Get employee/auditor information
-        employee_data = SecurityAudit.get_form_data(window)
+        employee_data = employee_data or SecurityAudit.get_form_data(window)
+        tick(5, "Reading auditor details")
         
         # Step 2: Import and call all data collectors
         # (Re-importing here ensures fresh data and avoids circular imports)
@@ -129,26 +83,42 @@ class SecurityAudit:
         )
         
         # Collect all security-related system information
+        tick(10, "Collecting antivirus information")
         antivirus_info = get_antivirus_info()
+        tick(16, "Reading Windows event logs")
         event_logs_info = get_system_events()
+        tick(22, "Checking firewall status")
         firewall_status = get_firewall_status()
+        tick(28, "Reading installed applications")
         installed_apps = get_installed_applications()
+        tick(34, "Inspecting network connections")
         network_connections = get_network_connections()
+        tick(40, "Reading PowerShell history")
         powershell_history = get_powershell_history()
+        tick(46, "Enumerating running processes")
         running_process = get_running_processes()
+        tick(52, "Enumerating scheduled tasks")
         scheduled_task = get_scheduled_tasks()
+        tick(58, "Reading startup programs")
         start_up_task = get_startup_programs()
+        tick(64, "Collecting system information")
         system_info = get_system_info()
+        tick(70, "Reading USB device history")
         usb_history = get_usb_history()
+        tick(76, "Auditing local user accounts")
         local_users = get_local_users()
+        tick(80, "Assessing risk level")
         
-        # Ensure output directory exists
-        Path(output_folder).mkdir(exist_ok=True)
+        # Ensure output directory exists (relative paths resolve to the project root)
+        output_path = Path(output_folder)
+        if not output_path.is_absolute():
+            output_path = Path(__file__).resolve().parent.parent / output_path
+        output_path.mkdir(parents=True, exist_ok=True)
         
         # Generate unique filename with timestamp
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         filename = f"Security_Audit_{employee_data['first_name']}_{employee_data['last_name']}_{timestamp}.xlsx"
-        filepath = Path(output_folder) / filename
+        filepath = output_path / filename
 
         # === Step 3: Dynamic Risk Level Assessment ===
         # Count potentially suspicious running processes
@@ -168,34 +138,13 @@ class SecurityAudit:
         else:
             risk_level = "LOW"
 
-        risk_colors = {
-            "LOW": "90EE90",      # Light green
-            "MEDIUM": "FFB366",   # Orange
-            "HIGH": "FF8C00",     # Dark orange
-            "CRITICAL": "FF6666"  # Red
-        }
-
         # === Step 4: Create Excel File with pandas ===
+        tick(86, "Building report worksheets")
         with pd.ExcelWriter(filepath, engine='openpyxl') as writer:
             
-            # Dashboard Sheet - High-level summary
-            dashboard_data = {
-                "Metric": ["Audit Date", "Auditor", "Position", "Department", "Computer Name",
-                          "Total Installed Apps", "Running Processes", 
-                          "Active Network Connections", "Risk Level"],
-                "Value": [
-                    datetime.now().strftime("%Y-%m-%d %H:%M"),
-                    f"{employee_data['first_name']} {employee_data['last_name']}",
-                    employee_data.get('position', 'N/A'),
-                    employee_data.get('Department', 'N/A'),   # Note: key matches form data
-                    system_info.get('Computer Name', 'N/A'),
-                    len(installed_apps),
-                    len(running_process),
-                    len(network_connections),
-                    risk_level
-                ]
-            }
-            pd.DataFrame(dashboard_data).to_excel(writer, sheet_name="Dashboard", index=False)
+            # Dashboard Sheet - rebuilt as a cover page during formatting
+            pd.DataFrame({"Metric": ["Placeholder"], "Value": [""]}).to_excel(
+                writer, sheet_name="Dashboard", index=False)
 
             # Employee Info Sheet
             pd.DataFrame([employee_data]).to_excel(writer, sheet_name="Employee Info", index=False)
@@ -227,17 +176,7 @@ class SecurityAudit:
             pd.DataFrame(usb_history).to_excel(writer, sheet_name="USB History", index=False)
             pd.DataFrame(local_users).to_excel(writer, sheet_name="Local Users", index=False)
 
-        # === Step 5: Advanced Formatting & Charting with openpyxl ===
-        wb = load_workbook(filepath)
-        dashboard = wb["Dashboard"]
-
-        # Highlight Risk Level cell with color coding
-        risk_cell = dashboard["B10"]   # Risk Level value cell
-        risk_color = risk_colors.get(risk_level, "90EE90")
-        risk_cell.fill = PatternFill(start_color=risk_color, end_color=risk_color, fill_type="solid")
-        risk_cell.font = Font(bold=True, color="000000")
-
-        # === Prepare Top 10 Running Processes Data ===
+        # === Step 5: Prepare dashboard aggregates ===
         process_list = []
         for p in running_process:
             if isinstance(p, dict):
@@ -251,53 +190,33 @@ class SecurityAudit:
         # Count occurrences and get top 10
         top_10 = Counter(process_list).most_common(10)
 
-        # Write Top 10 data to Dashboard (columns G and H)
-        dashboard['G1'] = "Process Name"
-        dashboard['H1'] = "Count"
-        
-        for i, (proc, count) in enumerate(top_10, start=2):
-            dashboard.cell(row=i, column=7, value=proc)
-            dashboard.cell(row=i, column=8, value=count)
+        # === Step 5: Hand the workbook to the report designer ===
+        tick(94, "Applying report design and charts")
+        wb = load_workbook(filepath)
 
-        # === Create Bar Chart for Top 10 Processes ===
-        chart = BarChart()
-        chart.title = "Top 10 Running Processes"
-        chart.y_axis.title = "Count"
-        chart.x_axis.title = "Process Name"
-        chart.style = 2
+        ReportStyler.apply(
+            wb,
+            employee_data=employee_data,
+            computer_name=system_info.get('Computer Name', 'N/A'),
+            risk_level=risk_level,
+            firewall_text=firewall_status,
+            defender_status=antivirus_info.get("Windows_Defender", {}),
+            suspicious_processes=suspicious_count,
+            top_processes=top_10,
+        )
 
-        # Define data ranges for the chart
-        data = Reference(dashboard, min_col=8, min_row=1, max_row=len(top_10) + 1)
-        categories = Reference(dashboard, min_col=7, min_row=2, max_row=len(top_10) + 1)
-
-        chart.add_data(data, titles_from_data=True)
-        chart.set_categories(categories)
-
-        # Chart appearance settings
-        chart.height = 15
-        chart.width = 26
-        chart.legend = None
-        chart.x_axis.tickLblPos = "low"   # Better label positioning
-
-        # Add chart to Dashboard sheet
-        dashboard.add_chart(chart, "J2")
-
-        # Apply consistent styling to ALL sheets
-        for sheet_name in wb.sheetnames:
-            ws = wb[sheet_name]
-            SecurityAudit._style_worksheet(ws, is_dashboard=(sheet_name == "Dashboard"))
-
-        # Add company logo to Dashboard (if provided)
+        # Add company logo to Dashboard (if provided), clear of the designed grid
         if logo_path and Path(logo_path).exists():
             try:
                 img = Image(logo_path)
                 img.width = 180
                 img.height = 90
-                dashboard.add_image(img, 'A1')
+                wb["Dashboard"].add_image(img, 'J1')
             except Exception as e:
                 print(f"⚠️ Could not add logo: {e}")
 
         # Save the final formatted workbook
+        tick(99, "Saving report to disk")
         wb.save(filepath)
         
         
